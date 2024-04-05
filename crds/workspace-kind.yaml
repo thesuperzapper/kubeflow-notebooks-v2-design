@@ -1,0 +1,138 @@
+apiVersion: kubeflow.org/v1
+kind: WorkspaceKind
+metadata:
+  name: jupyter-lab
+spec:
+  ## configs for how this WorkspaceKind should be displayed in the Workspace Spawner UI
+  spawner:
+    displayName: "JupyterLab Notebook"
+    description: "A Workspace which runs JupyterLab in a Pod"
+    hidden: false
+
+    ## a small (favicon-sized) icon used in the table overview
+    icon:
+      url: "https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png"
+
+      ## in the future, we might also support specifying a ConfigMap (or CRD) which contains the UI config
+      ## (this would require us to make the spawner automatically serve the logo file)
+      #configMap:
+      #   name: "my-logos"
+      #   key: "apple-touch-icon-152x152.png"
+
+    ## a 1:1 (card size) logo for the spawner page
+    logo:
+      url: "https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg"
+
+      ## in the future, we might also support specifying a ConfigMap (or CRD) which contains the UI config
+      ## (this would require us to make the spawner automatically serve the logo file)
+      #configMap:
+      #   name: "my-logos"
+      #   key: "Jupyter_logo.svg"
+
+  ## configs for a "podTemplate"-type WorkspaceKind (very similar to the existing Notebooks)
+  ##  - in future we may want to support other types of Workspace templates (e.g. "helmTemplate")
+  podTemplate:
+
+    ## immutable configs which are specific to this kind
+    static:
+      httpRewritePath: "/"
+      httpRStudioHeader: false
+      httpPort: 8888
+
+      ## the mount path for the "home volume"
+      homePath: "/home/jovyan"
+
+      ## the name of the Kubernetes ServiceAccount
+      serviceAccountName: "default-editor"
+
+   ## mutable configs which are specific to this kind
+   dynamic:
+     ## probe configs (https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core)
+     ## TODO: it might be the case that these Pod fields are immutable, if so, we should use the "pending restart"
+     ##             feature to apply these updates to exiting workspaces
+     probes:
+       startupProbe: {}
+       livenessProbe: {}
+       readinessProbe: {}
+
+     ## TODO: activity probe, similar to existing JupyterLab kernel activity check, but more generic
+     ##              - a "bash" command that returns "true"/"false" for if the workspace had activity in the last 60 seconds
+     ##              - an HTTP probe, which can use JQ to extract part of a JSON blob response (similar to Jupyter
+     activityProbe: {}
+
+     ## TODO: we should also have separate "culling threshold" configs, to allow variable points at which
+     ##              the workspace will be automatically paused (possibly also info like "email this person to confirm")
+     cullingConfigs: {}
+
+    ## options which are set in each Workspace instance (and exposed in the Workspace Spawner UI)
+    options:
+
+      ## "image" options
+      ##  - sets the container images which can be chosen for the Pod
+      image:
+        default: "jupyter_scipy_171"
+
+        ## the allowed values for this option
+        ##  - to prevent breaking existing Workspaces, values can NOT be removed, but can be hidden or redirected
+        values:
+          - id: "jupyter_scipy_170"
+            spawner:
+              displayName: "jupyter-scipy:v1.7.0"
+              description: "JupyterLab 1.7.0, with SciPy Packages"
+              hidden: true
+            spec:
+              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.0"
+
+            ## the "redirect" field can be used to redirect from one value to another
+            ##  - if "redirect.waitForRestart" is true, the controller waits for the Workspace to restart before applying the redirect
+            ##    (in this case, the Spawner UI will display a warning that the Workspace needs to be restarted)
+            redirect:
+              to: "jupyter_scipy_171"
+              waitForRestart: true
+
+          - id: "jupyter_scipy_171"
+            spawner:
+              displayName: "jupyter-scipy:v1.7.1"
+              description: "JupyterLab 1.7.1, with SciPy Packages"
+            spec:
+              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
+
+        ## "podConfig" options
+        ##  - sets options for Pod configs other than image/volume
+        ##    (e.g. resource requests, node selectors, tolerations, affinity)
+        podConfig:
+          default: "small_cpu"
+
+          ## the allowed values for this option
+          ##  - to prevent breaking existing Workspaces, values can NOT be removed, but can be hidden or redirected
+          values:
+            - id: "small_cpu"
+              spawner:
+                displayName: "Small CPU"
+                description: "Pod with 1 CPU, 2 GB RAM, and 1 GPU"
+              spec:
+                affinity: {}
+                nodeSelector: {}
+                resources:
+                  requests:
+                    cpu: 1
+                    memory: 2Gi
+                tolerations: []
+
+            - id: "big_gpu"
+              spawner:
+                displayName: "Big GPU"
+                description: "Pod with 4 CPU, 16 GB RAM, and 1 GPU"
+              spec:
+                affinity: {}
+                nodeSelector: {}
+                resources:
+                  requests:
+                    cpu: 4
+                    memory: 16Gi
+                  limits:
+                    nvidia.com/gpu: 1
+                tolerations:
+                  - key: "nvidia.com/gpu"
+                    operator: "Exists"
+                    effect: "NoSchedule"

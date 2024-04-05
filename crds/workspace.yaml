@@ -1,0 +1,38 @@
+apiVersion: kubeflow.org/v1
+kind: Workspace
+metadata:
+  name: my-notebook
+  namespace: my-namespace
+spec:
+  ## if the workspace is running
+  paused: false
+
+  ## the WorkspaceKind to use
+  kind: juptyer-lab
+
+  ## options for "podTemplate"-type WorkspaceKind
+  podTemplateOptions:
+
+    ## dropdown configs
+    image: "jupyter_scipy_170"
+    podConfig: "big_gpu"
+
+    ## volume mount configs
+    homeVolume: "my-home-pvc" # ?? should this ever be allowed as null
+    dataVolumes:
+      - name: my-data-pvc
+        mountPath: /data/my-data
+
+status:
+  ## information populated by activity probes, used to determine when to cull
+  activity:
+    lastActivity: 1710435303 # UNIX epoch
+    lastUpdate: 1710435310 # UNIX epoch
+
+  ## if the current Pod does not reflect the current "desired" state (after redirects)
+  pendingRestart: false
+
+  ## actual "target" podTemplateOptions, taking into account redirects
+  podTemplateOptions:
+    image: "jupyter_scipy_171"
+    podConfig: "big_gpu"
