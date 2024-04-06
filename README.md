@@ -1,4 +1,4 @@
-# kubeflow-notebooks-v2-design
+# Kubeflow Notebooks V2 Design
 
 The design document for Kubeflow Notebooks v2.
 

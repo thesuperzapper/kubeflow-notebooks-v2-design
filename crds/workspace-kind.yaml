@@ -70,17 +70,23 @@ spec:
     ## ==============================================================
     dynamic:
 
-      ## culling configs
+      ## metadata to apply to all Workspace Pods
+      ##
+      podMetadata:
+        labels: {}
+        annotations: {}
+
+      ## culling configs (determines when to pause a Workspace automatically)
+      ##  - see `probes.activityProbe` for more details
       ##
       cullingConfigs:
-        ## the maximum time a Workspace can be inactive before it is paused
         maxInactiveSeconds: 86400
 
       ## probe configs
       ##
       probes:
 
-        ## the standard Kubernetes Pod probes
+        ## standard Kubernetes probes to determine Pod health
         ##  - we might need to use the "pending restart" feature to apply these updates to existing workspaces
         ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
         ##

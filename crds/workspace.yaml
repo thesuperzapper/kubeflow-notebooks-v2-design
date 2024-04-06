@@ -31,7 +31,18 @@ spec:
     ## metadata to be applied to the Pod resource
     ##
     podMetadata:
+
+      ## labels are required to support the existing PodDefault resources
+      ##  - our controller needs to NOT revert changes made by admission webhooks.
+      ##    we can achieve this using a StatefulSet instead of making the Pod directly,
+      ##    this is what we do for the existing Notebook controller.
+      ##  - here are the fields of a PodDefault resource:
+      ##    https://github.com/kubeflow/kubeflow/blob/master/components/admission-webhook/pkg/apis/settings/v1alpha1/poddefault_types.go
+      ##
       labels: {}
+
+      ## annotations are commonly used to configure other controllers that watch the Pod
+      ##
       annotations: {}
 
 ## ================================================================
