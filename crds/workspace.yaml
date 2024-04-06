@@ -4,25 +4,39 @@ metadata:
   name: my-notebook
   namespace: my-namespace
 spec:
-  ## if the workspace is running
+  ## if the workspace should be paused (no pods running)
   paused: false
 
   ## the WorkspaceKind to use
-  kind: juptyer-lab
+  kind: "juptyer-lab"
 
-  ## options for "podTemplate"-type WorkspaceKind
-  podTemplateOptions:
+  ## options for WorkspaceKinds that are "podTemplate"-type
+  ##
+  podTemplate:
 
-    ## dropdown configs
-    image: "jupyter_scipy_170"
-    podConfig: "big_gpu"
+    ## option configs (defined by the WorkspaceKind)
+    ##
+    options:
+      image: "jupyter_scipy_170"
+      podConfig: "big_gpu"
 
-    ## volume mount configs
-    homeVolume: "my-home-pvc" # ?? should this ever be allowed as null
-    dataVolumes:
-      - name: my-data-pvc
-        mountPath: /data/my-data
+    ## volume configs
+    ##
+    volumes:
+      homePVC: "my-home-pvc"
+      dataPVCs:
+        - name: "my-data-pvc"
+          mountPath: /data/my-data
 
+    ## metadata to be applied to the Pod resource
+    ##
+    podMetadata:
+      labels: {}
+      annotations: {}
+
+## ================================================================
+## status (managed by controller)
+## ================================================================
 status:
   ## information populated by activity probes, used to determine when to cull
   activity:

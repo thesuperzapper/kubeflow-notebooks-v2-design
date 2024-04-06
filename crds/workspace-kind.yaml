@@ -3,38 +3,56 @@ kind: WorkspaceKind
 metadata:
   name: jupyter-lab
 spec:
-  ## configs for how this WorkspaceKind should be displayed in the Workspace Spawner UI
+
+  ## ================================================================
+  ## spawner configs
+  ## ================================================================
   spawner:
+
+    ## the name and description of the WorkspaceKind
     displayName: "JupyterLab Notebook"
     description: "A Workspace which runs JupyterLab in a Pod"
+
+    ## if this WorkspaceKind should be hidden from the Workspace Spawner UI
     hidden: false
 
     ## a small (favicon-sized) icon used in the table overview
+    ##
     icon:
+
+      ## the URL of the icon
+      ##  - must be accessible by user's browsers
+      ##
       url: "https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png"
 
-      ## in the future, we might also support specifying a ConfigMap (or CRD) which contains the UI config
-      ## (this would require us to make the spawner automatically serve the logo file)
+      ## read the icon from a Kubernetes ConfigMap
+      ##
       #configMap:
       #   name: "my-logos"
       #   key: "apple-touch-icon-152x152.png"
 
     ## a 1:1 (card size) logo for the spawner page
+    ##
     logo:
       url: "https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg"
-
-      ## in the future, we might also support specifying a ConfigMap (or CRD) which contains the UI config
-      ## (this would require us to make the spawner automatically serve the logo file)
       #configMap:
       #   name: "my-logos"
       #   key: "Jupyter_logo.svg"
 
-  ## configs for a "podTemplate"-type WorkspaceKind (very similar to the existing Notebooks)
-  ##  - in future we may want to support other types of Workspace templates (e.g. "helmTemplate")
+  ## ================================================================
+  ## podTemplate configs
+  ## ================================================================
   podTemplate:
 
-    ## immutable configs which are specific to this kind
+    ## ==============================================================
+    ## IMMUTABLE shared configs
+    ##  - these are the same for all instances of this kind,
+    ##    and can NOT be changed once the WorkspaceKind is created
+    ## ==============================================================
     static:
+
+      ## http configs (specific to the IDE type)
+      ##
       httpRewritePath: "/"
       httpRStudioHeader: false
       httpPort: 8888
@@ -45,94 +63,169 @@ spec:
       ## the name of the Kubernetes ServiceAccount
       serviceAccountName: "default-editor"
 
-   ## mutable configs which are specific to this kind
-   dynamic:
-     ## probe configs (https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core)
-     ## TODO: it might be the case that these Pod fields are immutable, if so, we should use the "pending restart"
-     ##             feature to apply these updates to exiting workspaces
-     probes:
-       startupProbe: {}
-       livenessProbe: {}
-       readinessProbe: {}
+    ## ==============================================================
+    ## MUTABLE shared configs
+    ##  - these can be changed at any time,
+    ##    and will be applied to all existing Workspaces
+    ## ==============================================================
+    dynamic:
 
-     ## TODO: activity probe, similar to existing JupyterLab kernel activity check, but more generic
-     ##              - a "bash" command that returns "true"/"false" for if the workspace had activity in the last 60 seconds
-     ##              - an HTTP probe, which can use JQ to extract part of a JSON blob response (similar to Jupyter
-     activityProbe: {}
+      ## culling configs
+      ##
+      cullingConfigs:
+        ## the maximum time a Workspace can be inactive before it is paused
+        maxInactiveSeconds: 86400
 
-     ## TODO: we should also have separate "culling threshold" configs, to allow variable points at which
-     ##              the workspace will be automatically paused (possibly also info like "email this person to confirm")
-     cullingConfigs: {}
+      ## probe configs
+      ##
+      probes:
 
-    ## options which are set in each Workspace instance (and exposed in the Workspace Spawner UI)
+        ## the standard Kubernetes Pod probes
+        ##  - we might need to use the "pending restart" feature to apply these updates to existing workspaces
+        ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
+        ##
+        startupProbe: {}
+        livenessProbe: {}
+        readinessProbe: {}
+
+        ## a custom probe, used to determine if the Workspace is still in use
+        ##
+        activityProbe:
+
+          ## OPTION 1: a "shell" command to run in the Workspace
+          ##  - if the Workspace had activity in the last 60 seconds this command
+          ##    should return status 0, otherwise it should return status 1
+          ##
+          #exec:
+          #  command:
+          #    - "bash"
+          #    - "-c"
+          #    - "exit 0"
+
+          ## OPTION 2: a Jupyter-specific probe
+          ##  - will poll the `/api/status` endpoint of the Jupyter API, and use the `last_activity` field
+          ##    https://github.com/jupyter-server/jupyter_server/blob/v2.13.0/jupyter_server/services/api/handlers.py#L62-L67
+          ##  - note, users need to be careful that their other probes don't trigger a "last_activity" update
+          ##    e.g. they should only check the health of Jupyter using the `/api/status` endpoint
+          ##
+          jupyter:
+            lastActivity: true
+
+    ## ==============================================================
+    ## OPTION configs
+    ##  - exposed in the Workspace Spawner UI when creating or editing a Workspace
+    ##  - to prevent breaking existing Workspaces, `values` can NOT be removed,
+    ##    but they can be hidden or redirected
+    ## ==============================================================
     options:
 
+      ## ============================================================
       ## "image" options
-      ##  - sets the container images which can be chosen for the Pod
+      ## ============================================================
       image:
         default: "jupyter_scipy_171"
-
-        ## the allowed values for this option
-        ##  - to prevent breaking existing Workspaces, values can NOT be removed, but can be hidden or redirected
         values:
+
+          ## ================================
+          ## EXAMPLE 1: a hidden option
+          ## ================================
           - id: "jupyter_scipy_170"
+
+            ## if the option should be redirected to another value
+            ##
+            redirect:
+              ## the ID of the value to redirect to
+              to: "jupyter_scipy_171"
+
+              ## if true, the controller waits for the Workspace to restart before applying the redirect
+              ## (in this case, the Spawner UI will display a warning that the Workspace needs to be restarted)
+              waitForRestart: true
+
+            ## how the option should be displayed in the Spawner UI
+            ##
             spawner:
               displayName: "jupyter-scipy:v1.7.0"
               description: "JupyterLab 1.7.0, with SciPy Packages"
+
+              ## if the option should be hidden from the Spawner UI (default: false)
               hidden: true
+
+            ## the actual image to use
+            ##
             spec:
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.0"
 
-            ## the "redirect" field can be used to redirect from one value to another
-            ##  - if "redirect.waitForRestart" is true, the controller waits for the Workspace to restart before applying the redirect
-            ##    (in this case, the Spawner UI will display a warning that the Workspace needs to be restarted)
-            redirect:
-              to: "jupyter_scipy_171"
-              waitForRestart: true
-
+          ## ================================
+          ## EXAMPLE 2: a visible option
+          ## ================================
           - id: "jupyter_scipy_171"
+            redirect: {}
             spawner:
               displayName: "jupyter-scipy:v1.7.1"
               description: "JupyterLab 1.7.1, with SciPy Packages"
+              hidden: false
             spec:
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
 
-        ## "podConfig" options
-        ##  - sets options for Pod configs other than image/volume
-        ##    (e.g. resource requests, node selectors, tolerations, affinity)
-        podConfig:
-          default: "small_cpu"
+      ## ============================================================
+      ## "podConfig" options
+      ## ============================================================
+      podConfig:
+        default: "small_cpu"
+        values:
 
-          ## the allowed values for this option
-          ##  - to prevent breaking existing Workspaces, values can NOT be removed, but can be hidden or redirected
-          values:
-            - id: "small_cpu"
-              spawner:
-                displayName: "Small CPU"
-                description: "Pod with 1 CPU, 2 GB RAM, and 1 GPU"
-              spec:
-                affinity: {}
-                nodeSelector: {}
-                resources:
-                  requests:
-                    cpu: 1
-                    memory: 2Gi
-                tolerations: []
+          ## ================================
+          ## EXAMPLE 1: a small CPU pod
+          ## ================================
+          - id: "small_cpu"
+            redirect: {}
+            spawner:
+              displayName: "Small CPU"
+              description: "Pod with 1 CPU, 2 GB RAM, and 1 GPU"
+              hidden: false
+            spec:
 
-            - id: "big_gpu"
-              spawner:
-                displayName: "Big GPU"
-                description: "Pod with 4 CPU, 16 GB RAM, and 1 GPU"
-              spec:
-                affinity: {}
-                nodeSelector: {}
-                resources:
-                  requests:
-                    cpu: 4
-                    memory: 16Gi
-                  limits:
-                    nvidia.com/gpu: 1
-                tolerations:
-                  - key: "nvidia.com/gpu"
-                    operator: "Exists"
-                    effect: "NoSchedule"
+              ## affinity configs for the pod
+              ## - https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
+              ##
+              affinity: {}
+
+              ## node selector configs for the pod
+              ##  - https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+              ##
+              nodeSelector: {}
+
+              ## toleration configs for the pod
+              ##  - https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core
+              ##
+              tolerations: []
+
+              ## resource configs for the "main" container in the pod
+              ##  - https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#resourcerequirements-v1-core
+              resources:
+                requests:
+                  cpu: 1
+                  memory: 2Gi
+
+          ## ================================
+          ## EXAMPLE 2: a big GPU pod
+          ## ================================
+          - id: "big_gpu"
+            redirect: {}
+            spawner:
+              displayName: "Big GPU"
+              description: "Pod with 4 CPU, 16 GB RAM, and 1 GPU"
+              hidden: false
+            spec:
+              affinity: {}
+              nodeSelector: {}
+              tolerations:
+                - key: "nvidia.com/gpu"
+                  operator: "Exists"
+                  effect: "NoSchedule"
+              resources:
+                requests:
+                  cpu: 4
+                  memory: 16Gi
+                limits:
+                  nvidia.com/gpu: 1
