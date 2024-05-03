@@ -106,7 +106,7 @@ spec:
           lastActivity: true
 
     ## standard probes to determine Container health (MUTABLE)
-    ##  - we might need to use the "pending restart" feature to apply these updates to existing workspaces
+    ##  - we need to use the "pending restart" feature to apply these updates to existing workspaces
     ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
     ##
     probes:
@@ -143,6 +143,20 @@ spec:
         #set: { "X-RStudio-Root-Path": "{{ .PathPrefix }}" } # for RStudio
         #append: {}
         #remove: []
+
+    ## environment variables for Workspace Pods (MUTABLE)
+    ##  - we need to use the "pending restart" feature to apply these updates to existing workspaces
+    ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#envvar-v1-core
+    ##  - the following string templates are available:
+    ##      - `.PathPrefix`: the path prefix of the Workspace (e.g. '/workspace/{profile_name}/{workspace_name}/')
+    ##
+    extraEnv:
+
+      ## for example, to enable backwards compatibility with the old Jupyter images, from Kubeflow Notebooks 1.8
+      ##  - https://github.com/kubeflow/kubeflow/blob/v1.8.0/components/example-notebook-servers/jupyter/s6/services.d/jupyterlab/run#L12
+      ##
+      - name: "NB_PREFIX"
+        value: "{{ .PathPrefix }}"
 
     ## ==============================================================
     ## WORKSPACE OPTIONS
