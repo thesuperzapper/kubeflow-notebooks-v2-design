@@ -19,6 +19,12 @@ spec:
     ## if this WorkspaceKind should be hidden from the Workspace Spawner UI
     hidden: false
 
+    ## if this WorkspaceKind is deprecated
+    deprecated: false
+
+    ## a message to show in Workspace Spawner UI when the WorkspaceKind is deprecated
+    deprecationMessage: "This WorkspaceKind will be removed on 20XX-XX-XX, please use another WorkspaceKind."
+
     ## the icon of the WorkspaceKind
     ##  - a small (favicon-sized) icon
     ##  - used in the Workspaces overview table
