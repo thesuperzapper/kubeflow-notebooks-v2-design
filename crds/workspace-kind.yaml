@@ -219,9 +219,16 @@ spec:
               ##
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.0"
 
-              ## the port that the container listens on
+              ## ports that the container listens on
+              ##  - currently, only HTTP is supported for `protocol`
+              ##  - currently, all ports use the same `httpProxy` settings
+              ##  - if multiple ports are defined, the user will see multiple "Connect" buttons
+              ##    in a dropdown menu on the Workspace overview page
               ##
-              httpPort: 8888
+              ports:
+                - name: "JupyterLab"
+                  port: 8888
+                  protocol: "HTTP"
 
           ## ================================
           ## EXAMPLE 2: a visible option
@@ -234,7 +241,10 @@ spec:
             redirect: {}
             spec:
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
-              httpPort: 8888
+              ports:
+                - name: "JupyterLab"
+                  port: 8888
+                  protocol: "HTTP"
 
       ## ============================================================
       ## POD CONFIG OPTIONS
