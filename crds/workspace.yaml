@@ -82,5 +82,5 @@ status:
 
   ## actual "target" podTemplateOptions, taking into account redirects
   podTemplateOptions:
-    image: "jupyter_scipy_171"
+    imageConfig: "jupyter_scipy_171"
     podConfig: "big_gpu"
