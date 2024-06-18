@@ -226,7 +226,7 @@ spec:
               ##    in a dropdown menu on the Workspace overview page
               ##
               ports:
-                - name: "JupyterLab"
+                - displayName: "JupyterLab"
                   port: 8888
                   protocol: "HTTP"
 
@@ -242,7 +242,7 @@ spec:
             spec:
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
               ports:
-                - name: "JupyterLab"
+                - displayName: "JupyterLab"
                   port: 8888
                   protocol: "HTTP"
 
