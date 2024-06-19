@@ -77,6 +77,9 @@ status:
     lastActivity: 1710435303 # UNIX epoch
     lastUpdate: 1710435310 # UNIX epoch
 
+  ## the time when the Workspace was paused, 0 if the Workspace is not paused
+  pauseTime: 0 # UNIX epoch
+
   ## if the current Pod does not reflect the current "desired" state (after redirects)
   pendingRestart: false
 
@@ -84,3 +87,11 @@ status:
   podTemplateOptions:
     imageConfig: "jupyter_scipy_171"
     podConfig: "big_gpu"
+
+  ## the current state of the Workspace
+  ##  - ENUM: "Running" | "Terminating" | "Paused" | "Pending" | "Error" | "Unknown"
+  state: "Running"
+
+  ## a human-readable message about the state
+  ##  - WARNING: this field is NOT FOR MACHINE USE, subject to change without notice
+  stateMessage: ""
