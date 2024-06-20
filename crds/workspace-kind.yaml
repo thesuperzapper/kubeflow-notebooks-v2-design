@@ -1,4 +1,4 @@
-apiVersion: kubeflow.org/v1
+apiVersion: kubeflow.org/v1beta1
 kind: WorkspaceKind
 metadata:
   name: jupyter-lab
@@ -147,7 +147,7 @@ spec:
       ##
       requestHeaders: {}
         #set: { "X-RStudio-Root-Path": "{{ .PathPrefix }}" } # for RStudio
-        #append: {}
+        #add: {}
         #remove: []
 
     ## environment variables for Workspace Pods (MUTABLE)
@@ -210,14 +210,27 @@ spec:
             spawner:
               displayName: "jupyter-scipy:v1.7.0"
               description: "JupyterLab 1.7.0, with SciPy Packages"
+              labels:
+                - key: "python_version"
+                  value: "3.11"
+                - key: "image_stage"
+                  value: "stable"
               hidden: true
             redirect:
               to: "jupyter_scipy_171"
               waitForRestart: true
+              message:
+                level: "Info" # "Info" | "Warning" | "Danger"
+                text: "This update will increase the version of JupyterLab to v1.7.1"
             spec:
               ## the container image to use
               ##
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.0"
+
+              ## the pull policy for the container image
+              ##  - default: "IfNotPresent"
+              ##
+              imagePullPolicy: "IfNotPresent"
 
               ## ports that the container listens on
               ##  - currently, only HTTP is supported for `protocol`
@@ -237,10 +250,16 @@ spec:
             spawner:
               displayName: "jupyter-scipy:v1.7.1"
               description: "JupyterLab 1.7.1, with SciPy Packages"
+              labels:
+                - key: "python_version"
+                  value: "3.11"
+                - key: "image_stage"
+                  value: "stable"
               hidden: false
             redirect: {}
             spec:
               image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
+              imagePullPolicy: "IfNotPresent"
               ports:
                 - displayName: "JupyterLab"
                   port: 8888
@@ -267,6 +286,11 @@ spec:
             spawner:
               displayName: "Small CPU"
               description: "Pod with 1 CPU, 2 GB RAM, and 1 GPU"
+              labels:
+                - key: "cpu"
+                  value: "1000m"
+                - key: "memory"
+                  value: "2Gi"
               hidden: false
             redirect: {}
             spec:
@@ -290,7 +314,7 @@ spec:
               ##
               resources:
                 requests:
-                  cpu: 1
+                  cpu: 1000m
                   memory: 2Gi
 
           ## ================================
@@ -300,6 +324,13 @@ spec:
             spawner:
               displayName: "Big GPU"
               description: "Pod with 4 CPU, 16 GB RAM, and 1 GPU"
+              labels:
+                - key: "cpu"
+                  value: "4"
+                - key: "memory"
+                  value: "16Gi"
+                - key: "gpu"
+                  value: "1"
               hidden: false
             redirect: {}
             spec:
@@ -311,7 +342,33 @@ spec:
                   effect: "NoSchedule"
               resources:
                 requests:
-                  cpu: 4
+                  cpu: 4000m
                   memory: 16Gi
                 limits:
                   nvidia.com/gpu: 1
+
+## ================================================================
+## status (managed by controller)
+## ================================================================
+status:
+
+  ## the number of Workspaces that are using this WorkspaceKind
+  workspaces: 1
+
+  ## metrics for podTemplate options
+  ##
+  podTemplateOptions:
+
+    ## metrics about the imageConfig options
+    imageConfig:
+      - id: "jupyter_scipy_170"
+        workspaces: 1
+      - id: "jupyter_scipy_171"
+        workspaces: 0
+
+    ## metrics about the podConfig options
+    podConfig:
+      - id: "small_cpu"
+        workspaces: 0
+      - id: "big_gpu"
+        workspaces: 1

@@ -1,4 +1,4 @@
-apiVersion: kubeflow.org/v1
+apiVersion: kubeflow.org/v1beta1
 kind: Workspace
 metadata:
   name: my-notebook
@@ -81,9 +81,9 @@ status:
   pauseTime: 0 # UNIX epoch
 
   ## if the current Pod does not reflect the current "desired" state (after redirects)
-  pendingRestart: false
+  pendingRestart: true
 
-  ## actual "target" podTemplateOptions, taking into account redirects
+  ## the "target" podTemplateOptions which will take effect after the next restart
   podTemplateOptions:
     imageConfig: "jupyter_scipy_171"
     podConfig: "big_gpu"
