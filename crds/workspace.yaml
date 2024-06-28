@@ -4,7 +4,7 @@ metadata:
   name: my-notebook
   namespace: my-namespace
 spec:
-  ## if the workspace should be paused (no pods running)
+  ## if the workspace is paused (no pods running)
   paused: false
 
   ## the WorkspaceKind to use
@@ -18,16 +18,13 @@ spec:
     ##
     podMetadata:
 
-      ## labels are required to support the existing PodDefault resources
-      ##  - our controller needs to NOT revert changes made by admission webhooks.
-      ##    we can achieve this using a StatefulSet instead of making the Pod directly,
-      ##    this is what we do for the existing Notebook controller.
-      ##  - here are the fields of a PodDefault resource:
+      ## labels to be applied to the Pod resource
+      ##  - labels are required to support integration with the PodDefault resource:
       ##    https://github.com/kubeflow/kubeflow/blob/master/components/admission-webhook/pkg/apis/settings/v1alpha1/poddefault_types.go
       ##
       labels: {}
 
-      ## annotations are commonly used to configure other controllers that watch the Pod
+      ## annotations to be applied to the Pod resource
       ##
       annotations: {}
 
@@ -35,28 +32,29 @@ spec:
     ##
     volumes:
 
-      ## a PVC to mount as the home directory
+      ## the name of the PVC to mount as the home volume
       ##  - this PVC must already exist in the Namespace
       ##  - this PVC must be RWX (ReadWriteMany, ReadWriteOnce)
-      ##  - mount path is defined in the WorkspaceKind under
+      ##  - the mount path is defined in the WorkspaceKind under
       ##    `spec.podTemplate.volumeMounts.home`
       ##
       home: "my-home-pvc"
 
-      ## additional data PVCs to mount
-      ##  - these PVCs must already exist in the Namespace
+      ## additional PVCs to mount
+      ##  - these PVC must already exist in the Namespace
+      ##  - these PVC must be RWX (ReadWriteMany, ReadWriteOnce)
       ##
       data:
         - name: "my-data-pvc"
           mountPath: /data/my-data
 
-    ## spawner options
+    ## the selected podTemplate options
     ##  - these are the user-selected options from the Workspace Spawner UI
     ##    which determine the PodSpec of the Workspace Pod
     ##
     options:
 
-      ## the id of an image option
+      ## the id of an imageConfig option
       ##  - options are defined in WorkspaceKind under
       ##    `spec.podTemplate.options.imageConfig.values[]`
       ##
@@ -72,18 +70,26 @@ spec:
 ## status (managed by controller)
 ## ================================================================
 status:
-  ## information populated by activity probes, used to determine when to cull
+  ## activity information for the Workspace, used to determine when to cull
   activity:
-    lastActivity: 1710435303 # UNIX epoch
+
+    ## the last time activity was observed on the Workspace (UNIX epoch)
+    lastActivity: 1710435303
+
+    ## the last time we checked for activity on the Workspace (UNIX epoch)
     lastUpdate: 1710435310 # UNIX epoch
 
   ## the time when the Workspace was paused, 0 if the Workspace is not paused
   pauseTime: 0 # UNIX epoch
 
-  ## if the current Pod does not reflect the current "desired" state (after redirects)
+  ## if the current Pod does not reflect the current "desired" state
+  ##  - true if any `spec.podTemplate.options` have a redirect
+  ##    and so will be patched on the next restart
+  ##  - true if the WorkspaceKind has changed one of its common `podTemplate` fields
+  ##    like `podMetadata`, `probes`, `extraEnv`, or `containerSecurityContext`
   pendingRestart: true
 
-  ## the "target" podTemplateOptions which will take effect after the next restart
+  ## the `spec.podTemplate.options` which will take effect after the next restart
   podTemplateOptions:
     imageConfig: "jupyter_scipy_171"
     podConfig: "big_gpu"
@@ -92,6 +98,6 @@ status:
   ##  - ENUM: "Running" | "Terminating" | "Paused" | "Pending" | "Error" | "Unknown"
   state: "Running"
 
-  ## a human-readable message about the state
+  ## a human-readable message about the state of the Workspace
   ##  - WARNING: this field is NOT FOR MACHINE USE, subject to change without notice
   stateMessage: ""

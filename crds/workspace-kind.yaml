@@ -26,9 +26,7 @@ spec:
     deprecationMessage: "This WorkspaceKind will be removed on 20XX-XX-XX, please use another WorkspaceKind."
 
     ## the icon of the WorkspaceKind
-    ##  - a small (favicon-sized) icon
-    ##  - used in the Workspaces overview table
-    ##  - either a public `url` or a Kubernetes `configMap`
+    ##  - a small (favicon-sized) icon used in the Workspace Spawner UI
     ##
     icon:
       url: "https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png"
@@ -37,9 +35,7 @@ spec:
       #   key: "apple-touch-icon-152x152.png"
 
     ## the logo of the WorkspaceKind
-    ##  - a 1:1 (card size) logo
-    ##  - used in the Workspace Spawner UI
-    ##  - either a public `url` or a Kubernetes `configMap`
+    ##  - a 1:1 (card size) logo used in the Workspace Spawner UI
     ##
     logo:
       url: "https://upload.wikimedia.org/wikipedia/commons/3/38/Jupyter_logo.svg"
@@ -56,20 +52,19 @@ spec:
   podTemplate:
 
     ## metadata for Workspace Pods (MUTABLE)
+    ##  - changes are applied the NEXT time each Workspace is PAUSED
     ##
     podMetadata:
       labels: {}
       annotations: {}
 
-    ## service account configs for Workspace Pods (NOT MUTABLE)
+    ## service account configs for Workspace Pods
     ##
     serviceAccount:
 
-      ## the name of the ServiceAccount
-      ##  - this Service Account MUST already exist in the Namespace of the Workspace,
-      ##    the controller will NOT create it
-      ##  - this may be used as low-security way to prevent some
-      ##    WorkspaceKinds from being used in some Namespaces
+      ## the name of the ServiceAccount (NOT MUTABLE)
+      ##  - this Service Account MUST already exist in the Namespace
+      ##    of the Workspace, the controller will NOT create it
       ##  - we will not show this WorkspaceKind in the Spawner UI
       ##    if the SA does not exist in the Namespace
       ##
@@ -92,7 +87,7 @@ spec:
       ##
       activityProbe:
 
-        ## OPTION 1: a "shell" command to run in the Workspace
+        ## OPTION 1: a shell command probe
         ##  - if the Workspace had activity in the last 60 seconds this command
         ##    should return status 0, otherwise it should return status 1
         ##
@@ -112,19 +107,20 @@ spec:
           lastActivity: true
 
     ## standard probes to determine Container health (MUTABLE)
-    ##  - we need to use the "pending restart" feature to apply these updates to existing workspaces
-    ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
+    ##  - changes are applied the NEXT time each Workspace is PAUSED
+    ##  - spec for Probe:
+    ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
     ##
     probes:
       startupProbe: {}
       livenessProbe: {}
       readinessProbe: {}
 
-    ## volume mount paths (NOT MUTABLE)
+    ## volume mount paths
     ##
     volumeMounts:
 
-      ## the path to mount the home PVC
+      ## the path to mount the home PVC (NOT MUTABLE)
       ##
       home: "/home/jovyan"
 
@@ -132,9 +128,10 @@ spec:
     ##
     httpProxy:
 
-      ## if the path prefix removed from incoming HTTP requests
-      ##  - if true, the '/workspace/{profile_name}/{workspace_name}/' path prefix is stripped from incoming requests,
-      ##    the application sees the request as if it was made to '/...'
+      ## if the path prefix is stripped from incoming HTTP requests
+      ##  - if true, the '/workspace/{profile_name}/{workspace_name}/' path prefix
+      ##    is stripped from incoming requests, the application sees the request
+      ##    as if it was made to '/...'
       ##  - this only works if the application serves RELATIVE URLs for its assets
       ##
       removePathPrefix: false
@@ -151,8 +148,9 @@ spec:
         #remove: []
 
     ## environment variables for Workspace Pods (MUTABLE)
-    ##  - we need to use the "pending restart" feature to apply these updates to existing workspaces
-    ##  - spec: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#envvar-v1-core
+    ##  - changes are applied the NEXT time each Workspace is PAUSED
+    ##  - spec for EnvVar:
+    ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#envvar-v1-core
     ##  - the following string templates are available:
     ##      - `.PathPrefix`: the path prefix of the Workspace (e.g. '/workspace/{profile_name}/{workspace_name}/')
     ##
@@ -163,6 +161,19 @@ spec:
       ##
       - name: "NB_PREFIX"
         value: "{{ .PathPrefix }}"
+
+    ## container SecurityContext for Workspace Pods (MUTABLE)
+    ##  - changes are applied the NEXT time each Workspace is PAUSED
+    ##  - spec for SecurityContext:
+    ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#securitycontext-v1-core
+    ##
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
 
     ## ==============================================================
     ## WORKSPACE OPTIONS
@@ -191,7 +202,7 @@ spec:
 
       ## ============================================================
       ## IMAGE CONFIG OPTIONS
-      ##  - SETS: container image
+      ##  - SETS: image, imagePullPolicy, ports
       ## ============================================================
       imageConfig:
 
