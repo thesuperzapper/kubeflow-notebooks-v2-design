@@ -7,6 +7,10 @@ spec:
   ## if the workspace is paused (no pods running)
   paused: false
 
+  ## if true, pending updates are NOT applied when the Workspace is paused
+  ## if false, pending updates are applied when the Workspace is paused
+  deferUpdates: false
+
   ## the WorkspaceKind to use
   kind: "juptyerlab"
 
@@ -89,10 +93,18 @@ status:
   ##    like `podMetadata`, `probes`, `extraEnv`, or `containerSecurityContext`
   pendingRestart: true
 
-  ## the `spec.podTemplate.options` which will take effect after the next restart
+  ## information about the current podTemplate options
+  ##  - each value of `desired` will replace `spec.podTemplate.options` when the Workspace is next paused
+  ##  - the `redirectChain` is the chain of options from the current state to the desired state
   podTemplateOptions:
-    imageConfig: "jupyterlab_scipy_190"
-    podConfig: "tiny_cpu"
+    imageConfig:
+      desired: "jupyterlab_scipy_190"
+      redirectChain:
+       - source: "jupyterlab_scipy_180"
+         target: "jupyterlab_scipy_190"
+    podConfig:
+      desired: "tiny_cpu"
+      redirectChain: []
 
   ## the current state of the Workspace
   ##  - ENUM: "Running" | "Terminating" | "Paused" | "Pending" | "Error" | "Unknown"
