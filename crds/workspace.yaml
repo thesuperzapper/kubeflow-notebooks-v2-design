@@ -1,14 +1,14 @@
 apiVersion: kubeflow.org/v1beta1
 kind: Workspace
 metadata:
-  name: my-notebook
-  namespace: my-namespace
+  name: my-workspace
+  namespace: default
 spec:
   ## if the workspace is paused (no pods running)
   paused: false
 
   ## the WorkspaceKind to use
-  kind: "juptyer-lab"
+  kind: "juptyerlab"
 
   ## options for "podTemplate"-type WorkspaceKinds
   ##
@@ -58,13 +58,13 @@ spec:
       ##  - options are defined in WorkspaceKind under
       ##    `spec.podTemplate.options.imageConfig.values[]`
       ##
-      imageConfig: "jupyter_scipy_170"
+      imageConfig: "jupyterlab_scipy_180"
 
       ## the id of a podConfig option
       ##  - options are defined in WorkspaceKind under
       ##    `spec.podTemplate.options.podConfig.values[]`
       ##
-      podConfig: "big_gpu"
+      podConfig: "tiny_cpu"
 
 ## ================================================================
 ## status (managed by controller)
@@ -91,8 +91,8 @@ status:
 
   ## the `spec.podTemplate.options` which will take effect after the next restart
   podTemplateOptions:
-    imageConfig: "jupyter_scipy_171"
-    podConfig: "big_gpu"
+    imageConfig: "jupyterlab_scipy_190"
+    podConfig: "tiny_cpu"
 
   ## the current state of the Workspace
   ##  - ENUM: "Running" | "Terminating" | "Paused" | "Pending" | "Error" | "Unknown"

@@ -1,9 +1,8 @@
 apiVersion: kubeflow.org/v1beta1
 kind: WorkspaceKind
 metadata:
-  name: jupyter-lab
+  name: jupyterlab
 spec:
-
   ## ================================================================
   ## SPAWNER CONFIGS
   ##  - how the WorkspaceKind is displayed in the Workspace Spawner UI
@@ -52,11 +51,12 @@ spec:
   podTemplate:
 
     ## metadata for Workspace Pods (MUTABLE)
-    ##  - changes are applied the NEXT time each Workspace is PAUSED
     ##
     podMetadata:
-      labels: {}
-      annotations: {}
+      labels:
+        my-workspace-kind-label: "my-value"
+      annotations:
+        my-workspace-kind-annotation: "my-value"
 
     ## service account configs for Workspace Pods
     ##
@@ -107,7 +107,6 @@ spec:
           lastActivity: true
 
     ## standard probes to determine Container health (MUTABLE)
-    ##  - changes are applied the NEXT time each Workspace is PAUSED
     ##  - spec for Probe:
     ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#probe-v1-core
     ##
@@ -148,7 +147,6 @@ spec:
         #remove: []
 
     ## environment variables for Workspace Pods (MUTABLE)
-    ##  - changes are applied the NEXT time each Workspace is PAUSED
     ##  - spec for EnvVar:
     ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#envvar-v1-core
     ##  - the following string templates are available:
@@ -162,8 +160,14 @@ spec:
       - name: "NB_PREFIX"
         value: "{{ .PathPrefix }}"
 
+    ## security context for Workspace Pods (MUTABLE)
+    ##  - spec for PodSecurityContext:
+    ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#podsecuritycontext-v1-core
+    ##
+    securityContext:
+      fsGroup: 100
+
     ## container SecurityContext for Workspace Pods (MUTABLE)
-    ##  - changes are applied the NEXT time each Workspace is PAUSED
     ##  - spec for SecurityContext:
     ##    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#securitycontext-v1-core
     ##
@@ -194,8 +198,6 @@ spec:
       ##     - redirected options are NOT shown in the Spawner UI
       ##     - redirected options are like an HTTP 302 redirect, the controller will use the target option
       ##       without actually changing the `spec.podTemplate.options` field of the Workspace
-      ##     - when `redirect.waitForRestart` is true, the controller waits for the Workspace to restart
-      ##       before applying the redirect (this prevents people from losing work)
       ##     - the Spawner UI will warn users about Workspaces with pending restarts
       ##
 
@@ -207,7 +209,7 @@ spec:
 
         ## the id of the default image config
         ##
-        default: "jupyter_scipy_171"
+        default: "jupyterlab_scipy_190"
 
         ## the list of image configs that are available
         ##
@@ -216,26 +218,23 @@ spec:
           ## ================================
           ## EXAMPLE 1: a hidden option
           ## ================================
-          - id: "jupyter_scipy_170"
+          - id: "jupyterlab_scipy_180"
             spawner:
-              displayName: "jupyter-scipy:v1.7.0"
-              description: "JupyterLab 1.7.0, with SciPy Packages"
+              displayName: "jupyter-scipy:v1.8.0"
+              description: "JupyterLab, with SciPy Packages"
               labels:
                 - key: "python_version"
                   value: "3.11"
-                - key: "image_stage"
-                  value: "stable"
               hidden: true
             redirect:
-              to: "jupyter_scipy_171"
-              waitForRestart: true
+              to: "jupyterlab_scipy_190"
               message:
                 level: "Info" # "Info" | "Warning" | "Danger"
-                text: "This update will increase the version of JupyterLab to v1.7.1"
+                text: "This update will change..."
             spec:
               ## the container image to use
               ##
-              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.0"
+              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.8.0"
 
               ## the pull policy for the container image
               ##  - default: "IfNotPresent"
@@ -256,19 +255,15 @@ spec:
           ## ================================
           ## EXAMPLE 2: a visible option
           ## ================================
-          - id: "jupyter_scipy_171"
+          - id: "jupyterlab_scipy_190"
             spawner:
-              displayName: "jupyter-scipy:v1.7.1"
-              description: "JupyterLab 1.7.1, with SciPy Packages"
+              displayName: "jupyter-scipy:v1.9.0"
+              description: "JupyterLab, with SciPy Packages"
               labels:
                 - key: "python_version"
                   value: "3.11"
-                - key: "image_stage"
-                  value: "stable"
-              hidden: false
-            redirect: {}
             spec:
-              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.7.1"
+              image: "docker.io/kubeflownotebookswg/jupyter-scipy:v1.9.0"
               imagePullPolicy: "IfNotPresent"
               ports:
                 - displayName: "JupyterLab"
@@ -283,19 +278,37 @@ spec:
 
         ## the id of the default pod config
         ##
-        default: "small_cpu"
+        default: "tiny_cpu"
 
         ## the list of pod configs that are available
         ##
         values:
 
           ## ================================
-          ## EXAMPLE 1: a small CPU pod
+          ## EXAMPLE 1: a tiny CPU pod
+          ## ================================
+          - id: "tiny_cpu"
+            spawner:
+              displayName: "Tiny CPU"
+              description: "Pod with 0.1 CPU, 128 Mb RAM"
+              labels:
+                - key: "cpu"
+                  value: "100m"
+                - key: "memory"
+                  value: "128Mi"
+            spec:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+
+          ## ================================
+          ## EXAMPLE 2: a small CPU pod
           ## ================================
           - id: "small_cpu"
             spawner:
               displayName: "Small CPU"
-              description: "Pod with 1 CPU, 2 GB RAM, and 1 GPU"
+              description: "Pod with 1 CPU, 2 GB RAM"
               labels:
                 - key: "cpu"
                   value: "1000m"
@@ -328,7 +341,7 @@ spec:
                   memory: 2Gi
 
           ## ================================
-          ## EXAMPLE 2: a big GPU pod
+          ## EXAMPLE 3: a big GPU pod
           ## ================================
           - id: "big_gpu"
             spawner:
@@ -336,7 +349,7 @@ spec:
               description: "Pod with 4 CPU, 16 GB RAM, and 1 GPU"
               labels:
                 - key: "cpu"
-                  value: "4"
+                  value: "4000m"
                 - key: "memory"
                   value: "16Gi"
                 - key: "gpu"
