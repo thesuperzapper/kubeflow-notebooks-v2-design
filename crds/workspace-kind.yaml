@@ -403,14 +403,16 @@ status:
 
     ## metrics about the imageConfig options
     imageConfig:
-      - id: "jupyter_scipy_170"
+      - id: "jupyterlab_scipy_180"
         workspaces: 1
-      - id: "jupyter_scipy_171"
+      - id: "jupyterlab_scipy_190"
         workspaces: 0
 
     ## metrics about the podConfig options
     podConfig:
+      - id: "tiny_cpu"
+        workspaces: 1
       - id: "small_cpu"
         workspaces: 0
       - id: "big_gpu"
-        workspaces: 1
+        workspaces: 0
